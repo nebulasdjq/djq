@@ -172,8 +172,6 @@
             var balance = jQuery.trim($("#balance").val());
             var summary = jQuery.trim($("#summary").val());
 
-            console.log("save title", title.length);
-            console.log("save content", content.length);
             if (strlen(title) > 30) {
                 title = sub(title, 30);
             }
@@ -199,21 +197,21 @@
                 callback: callbackUrl //NebPay.config.mainnetUrl 
             }
             var listener = function (resp) {
-                console.log("sendMsgIntervalQuery resp.txhash:::" + JSON.stringify(resp));
+
                 try {
                     var result = resp.toLowerCase();
                     if (result.indexOf("error") > -1) {
                         alert("出现错误：" + result);
                     }
-                    console.log("onSaveNote try result:::" + result);
+
                 } catch {
                     if (resp.txhash) {
                         queryTimes = 0;
-                        console.log("onSaveNote resp.txhash:::" + resp.txhash);
+
                         window.alert("已提交，正在写入区块链中。请稍等。");
                         intervalQuery = setInterval(function () {
                             saveNoteIntervalQuery();
-                            console.log("onSaveNote resp.txhash:::" + resp.txhash);
+
                         }, 5000);
                     }
                 }

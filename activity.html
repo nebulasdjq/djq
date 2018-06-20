@@ -196,14 +196,14 @@
                 },
                 callback: callbackUrl
             }
-            console.log("getActivityVouchers:::callArgs", callArgs);
+
             var listener = function (resp) {
-                console.log("getActivityVouchers:::resp", JSON.stringify(resp));
+
                 var res = resp.result;
                 var data = jQuery.parseJSON(resp.result)
                 if (data) {
                     vm2.$data.buyers = data.list.reverse();
-                    console.log("getActivityVouchers:::buyers", JSON.stringify(vm2.$data.buyers));
+
                 }
                 vm2.$data.isLoading = false;
             }
@@ -244,7 +244,7 @@
             }
             var value = accMul(vm.item.price, amount);
 
-            console.log("buy value", value);
+
             var callFunction = "buy"
             var callArgs = "[\"" + vm.item.id + "\"," + amount + "]"
 
@@ -254,7 +254,7 @@
                 },
                 callback: callbackUrl //NebPay.config.mainnetUrl 
             }
-            console.log("buy callArgs", callArgs);
+
             var listener = function (resp) {
                 try {
                     vm.$data.isBusy = false;
@@ -266,10 +266,9 @@
                     if (resp.txhash) {
                         queryTimes = 0;
                         vm.$data.isBusy = true;
-                        console.log("sendMsgIntervalQuery resp.txhash:::" + resp.txhash);
                         window.alert("已提交。过一会儿刷新查看, 或者到\"我的代金券\"查看。");
                         intervalQuery = setInterval(function () {
-                            subscribeNoteIntervalQuery();
+                            buyIntervalQuery();
                         }, 5000);
                     }
                 }
@@ -279,13 +278,13 @@
             });
         }
 
-        function subscribeNoteIntervalQuery() {
+        function buyIntervalQuery() {
             nebPay.queryPayInfo(serialNumber)
                 .then(function (resp) {
                     var respObject = JSON.parse(resp)
-                    console.log("saveNoteIntervalQuery resp:::" + resp);
+
                     if (respObject.code === 0) {
-                        console.log("saveNoteIntervalQuery respObject.code === 0:::" + queryTimes);
+
                         setTimeout("vm.$data.isBusy = false;", 20000);
                         clearInterval(intervalQuery)
                         queryTimes = 0;
@@ -294,61 +293,15 @@
                         queryTimes = 0;
                         window.alert('写入区块链发送失败，稍后再试');
                         clearInterval(intervalQuery)
-                        console.log("saveNoteIntervalQuery queryTimes++ >= 5:::" + queryTimes);
+
                     }
                 })
                 .catch(function (err) {
-                    console.log("saveNoteIntervalQuery err:::" + err);
+
                     queryTimes = 0;
                     vm.$data.isBusy = false;
                     window.alert('写入区块链发送失败，稍后再试');
                 });
-        }
-
-        function getCallFuntion(crt, dvalue, callback) {
-            //            validateTab3() &&
-            innerCall(function (params) {
-                neb.api
-                    .call({
-                        from: params.from,
-                        to: params.to,
-                        value: dvalue,
-                        nonce: params.nonce,
-                        gasPrice: params.gasPrice,
-                        gasLimit: params.gasLimit,
-                        contract: crt
-                    })
-                    .then(function (resp) {
-                        callback(resp)
-                    })
-                    .catch(function (err) {
-
-                    });
-            });
-        }
-
-        function innerCall(callback) {
-
-            let params = {};
-            //var account = new Account()
-            params.from = "n1daCgCFvYAQo2SC2Jx8jBcJJuf3pkc35Nb"; //account.getAddressString();
-            let toAddr = dappAddress //$("#run_to_addr").val().trim();
-            params.to = toAddr;
-            let gasLimit = Utils.toBigNumber(200000);
-            params.gasLimit = gasLimit.toNumber();
-            let gasPrice = Utils.toBigNumber(1000000);
-            params.gasPrice = gasPrice.toNumber();
-            let value = Utils.toBigNumber(0);
-            params.value = value;
-            neb.api.getAccountState(params.from).then(function (resp) {
-                var balance = nebulas.Unit.fromBasic(resp.balance, "nas");
-                //$tab = $(".show.tab");
-                //$("#amount").val(balance + " NAS");
-                params.nonce = parseInt(resp.nonce) + 1;
-                callback(params);
-            }).catch(function (err) {
-
-            });
         }
 
         function getActivity(id) {
@@ -367,7 +320,7 @@
                 console.log("getAriticel:::" + JSON.stringify(resp));
                 var res = resp.result;
                 var data = jQuery.parseJSON(resp.result)
-                console.log(JSON.stringify(resp));
+
                 if (data) {
                     vm.$data.item = data;
                 }
@@ -385,11 +338,7 @@
             vm2.$data.isLoading = true;
             getActivity(id);
             getActivityVouchers(id);
-            if (typeof (webExtensionWallet) === "undefined") {
-                // getFreeAriticel(id);
-            } else {
 
-            }
         });
     </script>
 </body>
