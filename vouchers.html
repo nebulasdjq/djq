@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <!-- Meta, title, CSS, favicons, etc. -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="代金券.商家代金券分发平台，用户管理收到的代金券。">
+    <title>
+        代金券.商家代金券分发平台，用户管理收到的代金券
+    </title>
+    <!-- Bootstrap core CSS -->
+    <link href="./indexlink/bootstrap.min.css" rel="stylesheet">
+    <!-- Documentation extras -->
+    <link href="./indexlink/docs.min.css" rel="stylesheet">
+</head>
+
+<body class="bs-docs-home">
+    <a id="skippy" class="sr-only sr-only-focusable" href="https://v3.bootcss.com/#content">
+        <div class="container">
+            <span class="skiplink-text">Skip to main content</span>
+        </div>
+    </a>
+    <!-- Docs master nav -->
+    <header class="navbar navbar-static-top bs-docs-nav" id="top">
+        <div class="container">
+            <div class="navbar-header">
+                <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#bs-navbar" aria-controls="bs-navbar"
+                    aria-expanded="false">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+            </div>
+            <nav id="bs-navbar" class="collapse navbar-collapse">
+                    <ul class="nav navbar-nav">
+                        <li >
+                            <a href="./index.html" class="navbar-brand">首页</a>
+                        </li>
+                        <li > 
+                            <a href="./merchant.html" class="navbar-brand" title="创建代金券，购买正在发售的代金券">商户中心</a>
+                        </li>
+                        <li class="active">
+                            <a href="./vouchers.html" class="navbar-brand" title="分发给我的代金券"><span class="text-danger">我的代金券</span></a>
+                        </li>
+                    </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li > 
+                            <a href="./help.html" class="navbar-brand">使用帮助</a>
+                        </li>
+                    </ul>
+                </nav>
+        </div>
+    </header>
+    <hr />
+    <div class="container" id=activityDiv>
+         <div class="col-sm-6 text-center" style="height: 500px;" v-if="isLoading">
+               <img src="./img//loading.gif" style="margin-top: 100px">
+        </div>
+        <div v-for="item of items" v-if="haveVouchers">
+            <div class="col-sm-6">
+                <div style="height: 12px;"></div>
+                <div class="panel panel-danger" style="background-image: url(./img/bgsmall.jpg);color: #fff">
+                    <p style="margin: 0px 12px 12px 12px; font-size: 32px;color: goldenrod">{{item.title}}</p>
+                    <p style="margin: 12px; font-size: 22px">{{item.content}}</p>
+                    <p style="margin: 12px; font-size: 22px">价值(NAS)：{{item.value}}&nbsp;NAS </p>
+                    <p style="margin: 12px; font-size: 22px">面额(RMB)：{{item.amount}}元</p>
+                    <p style="margin: 12px; font-size: 22px">有效期：{{item.toDate}}</p>
+                    <p style="margin: 12px; font-size: 18px;color:#ccc">所有权：{{item.owner}}</p>
+                </div>
+                <div>
+                        <button class="btn btn-outline btn-block" v-on:click="activity(item.fromId)">查看详情 | 再次购买</button>
+                    </div>
+            </div>
+        </div>
+        <div v-else class="text-center" style="margin: 200px 0px">
+            <p>还没有代金券.</p>
+            <a href="./merchant.html" class="btn btn-outline btn-lg">去商户中心逛逛</a>
+        </div>
+        <hr />
+        
+    </div>
+    <footer class="bs-docs-footer">
+            <div class="container">
+                <p>Copyright © 2018 星云代金券，联系我们<a href="mailto:indiestudio@outlook.com" target="_blank">indiestudio@outlook.com</a> </p>
+            </div>
+        </footer>
+</body>
+<script src="https://cdn.bootcss.com/vue/2.5.17-beta.0/vue.min.js"></script>
+<script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src=lib/nebulas.js></script>
+<script src=lib/nebPay.js></script>
+<script src="https://cdn.bootcss.com/babel-polyfill/7.0.0-beta.49/polyfill.min.js"></script>
+<script>
+    "use strict";
+    var dappAddress = "n1uc6Aas79FMdtYTaCVWHVrxmqNDh7Hc5Le";
+    var NebPay = require("nebpay");
+    var nebPay = new NebPay();
+    var nebulas = require("nebulas"),
+        Account = nebulas.Account,
+        Utils = nebulas.Utils,
+        neb = new nebulas.Neb();
+    var serialNumber;
+    var intervalQuery;
+    var queryTimes = 0;
+    var callbackUrl = NebPay.config.mainnetUrl;
+    neb.setRequest(new nebulas.HttpRequest("https://mainnet.nebulas.io"));
+    var vm = new Vue({
+        el: "#activityDiv",
+        data: {
+            wallet: typeof (webExtensionWallet) === "undefined",
+            items: [{}],
+            isBusy: false,
+            isLogin: false,
+            selectedItem: {},
+            test: "test",
+            balance: nebulas.Unit.fromBasic(0, "wei"),
+            isLoading: false
+        },
+        computed: {
+            // 计算属性的 getter
+            haveVouchers: function () {
+                // `this` 指向 vm 实例
+                return this.items[0].fromId ? true : false;
+            }
+        }
+    });
+    var compare = function (obj1, obj2) {
+        var val1 = parseInt(obj1.msgs[obj1.msgs.length - 1].timestamp) * 1000;
+        var val2 = parseInt(obj2.msgs[obj2.msgs.length - 1].timestamp) * 1000;
+        if (val1 < val2) {
+            return 1;
+        } else if (val1 > val2) {
+            return -1;
+        } else {
+            return 0;
+        }
+    }
+
+    function getFreeArticles() {
+        console.log("getFreeArticles");
+        var crt = {
+            "function": "getAllArticles",
+            "args": "[10]"
+        };
+        getCallFuntion(crt, 0, function (resp) {
+            var res = resp.result;
+            var data = jQuery.parseJSON(resp.result)
+            if (data) {
+                vm.$data.items = data.reverse();
+            }
+        });
+    }
+
+    function number2Nas(amount) {
+        var d = amount.replace("\"", "").replace("\"", "");
+        return nebulas.Unit.fromBasic(d, "wei");
+    }
+
+
+    function getMyVouchers() {
+        var to = dappAddress;
+        var value = 0;
+        var callFunction = "getMyVouchers"
+        var callArgs = ""
+        var options = {
+            goods: {
+                name: "example"
+            },
+            callback: callbackUrl
+        }
+        var listener = function (resp) {
+            console.log("getAllArticles:::" + JSON.stringify(resp));
+            var res = resp.result;
+            var data = jQuery.parseJSON(resp.result)
+            if (data) {
+                console.log("getAllArticles:::" + JSON.stringify(data.activities));
+                vm.$data.items = data.list.reverse();
+                console.log("getAllArticles:::" + JSON.stringify(vm.items));
+            }
+            vm.$data.isLoading = false;
+        }
+        nebPay.simulateCall(to, value, callFunction, callArgs, {
+            listener: listener
+        });
+    }
+
+
+    function activity(id) {
+        var url = 'activity.html?id=' + id;
+        url = encodeURI(url);
+        window.open(url,"_self");
+    }
+
+    function subscribe(id, amount) {
+        var to = dappAddress;
+        var value = amount;
+        var callFunction = "subscribe"
+        var callArgs = "[" + id + "]"
+
+        var options = {
+            goods: {
+                name: "example"
+            },
+            callback: callbackUrl //NebPay.config.mainnetUrl 
+        }
+        var listener = function (resp) {
+            try {
+                vm.$data.isBusy = false;
+                var result = resp.toLowerCase();
+                if (result.indexOf("error") > -1) {
+                    window.alert("出现错误：" + result);
+                }
+            } catch (err) {
+                if (resp.txhash) {
+                    queryTimes = 0;
+                    vm.$data.isBusy = true;
+                    console.log("sendMsgIntervalQuery resp.txhash:::" + resp.txhash);
+                    window.alert("订阅已提交。过一会儿刷新查看。交易hash：" + resp.txhash);
+                    intervalQuery = setInterval(function () {
+                        subscribeNoteIntervalQuery();
+                    }, 5000);
+                }
+            }
+        }
+        serialNumber = nebPay.call(to, value, callFunction, callArgs, {
+            listener: listener
+        });
+    }
+
+    function subscribeNoteIntervalQuery() {
+        nebPay.queryPayInfo(serialNumber)
+            .then(function (resp) {
+                var respObject = JSON.parse(resp)
+                console.log("saveNoteIntervalQuery resp:::" + resp);
+                if (respObject.code === 0) {
+                    console.log("saveNoteIntervalQuery respObject.code === 0:::" + queryTimes);
+                    setTimeout("vm.$data.isBusy = false; getAllArticles();", 20000);
+                    clearInterval(intervalQuery)
+                    queryTimes = 0;
+
+                } else if (queryTimes++ >= 5) {
+                    vm.$data.isBusy = false;
+                    queryTimes = 0;
+                    window.alert('写入区块链发送失败，稍后再试');
+                    clearInterval(intervalQuery)
+                    console.log("saveNoteIntervalQuery queryTimes++ >= 5:::" + queryTimes);
+                }
+            })
+            .catch(function (err) {
+                console.log("saveNoteIntervalQuery err:::" + err);
+                queryTimes = 0;
+                vm.$data.isBusy = false;
+                window.alert('写入区块链发送失败，稍后再试');
+            });
+    }
+
+
+    function getCallFuntion(crt, dvalue, callback) {
+        //            validateTab3() &&
+        innerCall(function (params) {
+            neb.api
+                .call({
+                    from: params.from,
+                    to: params.to,
+                    value: dvalue,
+                    nonce: params.nonce,
+                    gasPrice: params.gasPrice,
+                    gasLimit: params.gasLimit,
+                    contract: crt
+                })
+                .then(function (resp) {
+                    callback(resp)
+                })
+                .catch(function (err) {
+
+                });
+        });
+    }
+
+    function innerCall(callback) {
+        let params = {};
+        //var account = new Account()
+        params.from = "n1daCgCFvYAQo2SC2Jx8jBcJJuf3pkc35Nb"; //account.getAddressString();
+        let toAddr = dappAddress //$("#run_to_addr").val().trim();
+        params.to = toAddr;
+        let gasLimit = Utils.toBigNumber(200000);
+        params.gasLimit = gasLimit.toNumber();
+        let gasPrice = Utils.toBigNumber(1000000);
+        params.gasPrice = gasPrice.toNumber();
+        let value = Utils.toBigNumber(0);
+        params.value = value;
+        neb.api.getAccountState(params.from).then(function (resp) {
+            var balance = nebulas.Unit.fromBasic(resp.balance, "nas");
+            //$tab = $(".show.tab");
+            //$("#amount").val(balance + " NAS");
+            params.nonce = parseInt(resp.nonce) + 1;
+            callback(params);
+        }).catch(function (err) {
+
+        });
+    }
+
+
+
+    function compileStr(code) {
+        var c = String.fromCharCode(code.charCodeAt(0) + code.length);
+        for (var i = 1; i < code.length; i++) {
+            c += String.fromCharCode(code.charCodeAt(i) + code.charCodeAt(i - 1));
+        }
+        return escape(c);
+    }
+
+    function uncompileStr(code) {
+        if (!code)
+            return "";
+        code = unescape(code);
+        var c = String.fromCharCode(code.charCodeAt(0) - code.length);
+        for (var i = 1; i < code.length; i++) {
+            c += String.fromCharCode(code.charCodeAt(i) - c.charCodeAt(i - 1));
+        }
+        return c;
+    }
+    $(document).ready(function () {
+        vm.$data.isLoading = true;
+        getMyVouchers();
+        
+    });
+</script>
+
+</html>

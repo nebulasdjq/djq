@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <!-- Meta, title, CSS, favicons, etc. -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="代金券.商家代金券分发平台，用户管理收到的代金券。">
+    <title>
+        代金券.商家代金券分发平台，用户管理收到的代金券
+    </title>
+    <!-- Bootstrap core CSS -->
+    <link href="./indexlink/bootstrap.min.css" rel="stylesheet">
+    <!-- Documentation extras -->
+    <link href="./indexlink/docs.min.css" rel="stylesheet">
+</head>
+
+<body class="bs-docs-home">
+    <a id="skippy" class="sr-only sr-only-focusable" href="https://v3.bootcss.com/#content">
+        <div class="container">
+            <span class="skiplink-text">Skip to main content</span>
+        </div>
+    </a>
+    <!-- Docs master nav -->
+    <header class="navbar navbar-static-top bs-docs-nav" id="top">
+        <div class="container">
+            <div class="navbar-header">
+                <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#bs-navbar" aria-controls="bs-navbar"
+                    aria-expanded="false">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+            </div>
+            <nav id="bs-navbar" class="collapse navbar-collapse">
+                    <ul class="nav navbar-nav">
+                        <li >
+                            <a href="./index.html" class="navbar-brand">首页</a>
+                        </li>
+                        <li > 
+                            <a href="./merchant.html" class="navbar-brand" title="创建代金券，购买正在发售的代金券">商户中心</a>
+                        </li>
+                        <li>
+                            <a href="./vouchers.html" class="navbar-brand" title="分发给我的代金券">我的代金券</a>
+                        </li>
+                    </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                            <li class="active">
+                                    <a href="./activity.html" class="navbar-brand"><span class="text-danger">代金券详情</span></a>
+                                </li>
+                        <li>
+                            <a href="./help.html" class="navbar-brand">使用帮助</a>
+                        </li>
+                    </ul>
+                </nav>
+        </div>
+    </header>
+    <hr />
+    <div class="text-center">
+        <h3>代金券详情</h3>
+    </div>
+    <div class="container" id="activityDiv">
+        <div class="text-center" style="vertical-align: middle" v-if="isLoading">
+            <img src="./img//loading.gif" style="margin-top: 100px">
+        </div>
+        <div class="panel panel-success" v-else>
+            <div class="panel-heading">
+                <div class="panel-title row">
+                    <span style="margin: 0px 12px">{{item.title}}</span>
+                </div>
+            </div>
+            <div class="panel-body bg-warning" style="color: dimgray">
+                <p>{{item.content}}</p>
+                <p>保证金：{{item.nasBalance}}&nbsp;NAS </p>
+                <p>有效期：{{item.toDate}}</p>
+                <div class="row">
+                    <p class="col-sm-4">发行总量：{{item.summary}} </p>
+                    <p class="col-sm-4">已售出：{{item.summary - item.balance}} </p>
+                    <p class="col-sm-4">余额：{{item.balance}} </p>
+                </div>
+                <p>发行方：{{item.owner}}</p>
+            </div>
+            <div class="panel-footer">
+                <div class="row">
+                    <form class="col-sm-4">
+                        <div class="form-group">
+                            <label class="sr-only" for="exampleInputAmount">Amount (in dollars)</label>
+                            <div class="input-group">
+                                <div class="input-group-addon">单价</div>
+                                <input type="text" class="form-control" v-model="item.price" disabled id="exampleInputAmount" placeholder="Amount">
+                                <div class="input-group-addon">NAS</div>
+                            </div>
+                        </div>
+                    </form>
+                    <form class="col-sm-8" action="" onSubmit="return(buy())" target="nm_iframe">
+                        <div class="form-group col-sm-6">
+                            <label class="sr-only" for="exampleInputAmount">Amount (in dollars)</label>
+                            <div class="input-group">
+                                <div class="input-group-addon">购买</div>
+                                <input type="number" class="form-control" id="amount" placeholder="100">
+                            </div>
+                        </div>
+                        <button type="submit" class="col-sm-6 btn btn-success">购买</button>
+                    </form>
+                    <iframe id="id_iframe" name="nm_iframe" style="display:none;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container" id="buyersSection">
+
+        <div class="text-center">
+            <h3>销售记录</h3>
+        </div>
+        <div class="text-center" style=" vertical-align: middle" v-if="isLoading">
+            <img src="./img//loading.gif" style="margin-top: 100px">
+        </div>
+        <table class="table table-hover" v-else>
+            <tr class="success text-success">
+                <th>用户地址</th>
+                <th>购买日期</th>
+                <th>代金券面额(RMB)</th>
+                <th>花费(NAS)</th>
+            </tr>
+            <tr v-for="item of buyers">
+                <td>{{item.owner}}</td>
+                <td>{{ item.fromDate }}</td>
+                <td>{{item.amount}}</td>
+                <td>{{item.value}}</td>
+            </tr>
+        </table>
+    </div>
+    <footer class="bs-docs-footer">
+        <div class="container">
+            <p>Copyright © 2018 星云代金券，联系我们<a href="mailto:indiestudio@outlook.com" target="_blank">indiestudio@outlook.com</a> </p>
+        </div>
+    </footer>
+    <script src="https://cdn.bootcss.com/vue/2.5.17-beta.0/vue.min.js"></script>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+
+    <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src=lib/nebulas.js></script>
+    <script src=lib/nebPay.js></script>
+    <script src="https://cdn.bootcss.com/babel-polyfill/7.0.0-beta.49/polyfill.min.js"></script>
+
+    <script>
+        "use strict";
+        var dappAddress = "n1uc6Aas79FMdtYTaCVWHVrxmqNDh7Hc5Le";
+        var NebPay = require("nebpay");
+        var nebPay = new NebPay();
+        var nebulas = require("nebulas"),
+            Account = nebulas.Account,
+            Utils = nebulas.Utils,
+            neb = new nebulas.Neb();
+        var serialNumber;
+        var intervalQuery;
+        var queryTimes = 0;
+        var callbackUrl = NebPay.config.mainnetUrl;
+        neb.setRequest(new nebulas.HttpRequest("https://mainnet.nebulas.io"));
+
+        var vm = new Vue({
+            el: "#activityDiv",
+            data: {
+                wallet: typeof (webExtensionWallet) === "undefined",
+                item: {},
+                isBusy: false,
+                isLoading: true,
+                selectedItem: {},
+                balance: nebulas.Unit.fromBasic(0, "wei")
+            }
+        });
+        var vm2 = new Vue({
+            el: "#buyersSection",
+            data: {
+                buyers: [{}],
+                isLoading: true,
+            }
+        });
+
+        function number2Nas(amount) {
+            var d = amount.replace("\"", "").replace("\"", "");
+            return nebulas.Unit.fromBasic(d, "wei");
+        }
+
+        function getActivityVouchers(id) {
+            var to = dappAddress;
+            var value = 0;
+            var callFunction = "getActivityVouchers"
+            var callArgs = "[\"" + id + "\"]";
+            var options = {
+                goods: {
+                    name: "example"
+                },
+                callback: callbackUrl
+            }
+            console.log("getActivityVouchers:::callArgs", callArgs);
+            var listener = function (resp) {
+                console.log("getActivityVouchers:::resp", JSON.stringify(resp));
+                var res = resp.result;
+                var data = jQuery.parseJSON(resp.result)
+                if (data) {
+                    vm2.$data.buyers = data.list.reverse();
+                    console.log("getActivityVouchers:::buyers", JSON.stringify(vm2.$data.buyers));
+                }
+                vm2.$data.isLoading = false;
+            }
+            nebPay.simulateCall(to, value, callFunction, callArgs, {
+                listener: listener
+            });
+        }
+
+        function activity(id) {
+            var url = 'activity.html?id=' + id;
+            url = encodeURI(url);
+            window.open(url);
+        }
+
+        function accMul(arg1, arg2) {
+            var m = 0,
+                s1 = arg1.toString(),
+                s2 = arg2.toString();
+            try {
+                m += s1.split(".")[1].length
+            } catch (e) {}
+            try {
+                m += s2.split(".")[1].length
+            } catch (e) {}
+            return Number(s1.replace(".", "")) * Number(s2.replace(".", "")) / Math.pow(10, m)
+        }
+
+        function buy() {
+            var to = dappAddress;
+            var amount = parseInt(jQuery.trim($("#amount").val()));
+            if (amount < 1 || !amount) {
+                window.alert("请输入购买数量（必须为整数）。");
+                return;
+            }
+            if (amount > vm.item.balance || !amount) {
+                window.alert("没有这么多代金券可以出售，请减少购买量。");
+                return;
+            }
+            var value = accMul(vm.item.price, amount);
+
+            console.log("buy value", value);
+            var callFunction = "buy"
+            var callArgs = "[\"" + vm.item.id + "\"," + amount + "]"
+
+            var options = {
+                goods: {
+                    name: "example"
+                },
+                callback: callbackUrl //NebPay.config.mainnetUrl 
+            }
+            console.log("buy callArgs", callArgs);
+            var listener = function (resp) {
+                try {
+                    vm.$data.isBusy = false;
+                    var result = resp.toLowerCase();
+                    if (result.indexOf("error") > -1) {
+                        window.alert("交易已取消");
+                    }
+                } catch (err) {
+                    if (resp.txhash) {
+                        queryTimes = 0;
+                        vm.$data.isBusy = true;
+                        console.log("sendMsgIntervalQuery resp.txhash:::" + resp.txhash);
+                        window.alert("已提交。过一会儿刷新查看, 或者到\"我的代金券\"查看。");
+                        intervalQuery = setInterval(function () {
+                            subscribeNoteIntervalQuery();
+                        }, 5000);
+                    }
+                }
+            }
+            serialNumber = nebPay.call(to, value, callFunction, callArgs, {
+                listener: listener
+            });
+        }
+
+        function subscribeNoteIntervalQuery() {
+            nebPay.queryPayInfo(serialNumber)
+                .then(function (resp) {
+                    var respObject = JSON.parse(resp)
+                    console.log("saveNoteIntervalQuery resp:::" + resp);
+                    if (respObject.code === 0) {
+                        console.log("saveNoteIntervalQuery respObject.code === 0:::" + queryTimes);
+                        setTimeout("vm.$data.isBusy = false;", 20000);
+                        clearInterval(intervalQuery)
+                        queryTimes = 0;
+                    } else if (queryTimes++ >= 5) {
+                        vm.$data.isBusy = false;
+                        queryTimes = 0;
+                        window.alert('写入区块链发送失败，稍后再试');
+                        clearInterval(intervalQuery)
+                        console.log("saveNoteIntervalQuery queryTimes++ >= 5:::" + queryTimes);
+                    }
+                })
+                .catch(function (err) {
+                    console.log("saveNoteIntervalQuery err:::" + err);
+                    queryTimes = 0;
+                    vm.$data.isBusy = false;
+                    window.alert('写入区块链发送失败，稍后再试');
+                });
+        }
+
+        function getCallFuntion(crt, dvalue, callback) {
+            //            validateTab3() &&
+            innerCall(function (params) {
+                neb.api
+                    .call({
+                        from: params.from,
+                        to: params.to,
+                        value: dvalue,
+                        nonce: params.nonce,
+                        gasPrice: params.gasPrice,
+                        gasLimit: params.gasLimit,
+                        contract: crt
+                    })
+                    .then(function (resp) {
+                        callback(resp)
+                    })
+                    .catch(function (err) {
+
+                    });
+            });
+        }
+
+        function innerCall(callback) {
+
+            let params = {};
+            //var account = new Account()
+            params.from = "n1daCgCFvYAQo2SC2Jx8jBcJJuf3pkc35Nb"; //account.getAddressString();
+            let toAddr = dappAddress //$("#run_to_addr").val().trim();
+            params.to = toAddr;
+            let gasLimit = Utils.toBigNumber(200000);
+            params.gasLimit = gasLimit.toNumber();
+            let gasPrice = Utils.toBigNumber(1000000);
+            params.gasPrice = gasPrice.toNumber();
+            let value = Utils.toBigNumber(0);
+            params.value = value;
+            neb.api.getAccountState(params.from).then(function (resp) {
+                var balance = nebulas.Unit.fromBasic(resp.balance, "nas");
+                //$tab = $(".show.tab");
+                //$("#amount").val(balance + " NAS");
+                params.nonce = parseInt(resp.nonce) + 1;
+                callback(params);
+            }).catch(function (err) {
+
+            });
+        }
+
+        function getActivity(id) {
+            var to = dappAddress;
+            var value = 0;
+            var callFunction = "getActivity"
+            var callArgs = "[\"" + id + "\"]"
+            var options = {
+                goods: {
+                    name: "example"
+                },
+                callback: callbackUrl
+            }
+            console.log(JSON.stringify(id));
+            var listener = function (resp) {
+                console.log("getAriticel:::" + JSON.stringify(resp));
+                var res = resp.result;
+                var data = jQuery.parseJSON(resp.result)
+                console.log(JSON.stringify(resp));
+                if (data) {
+                    vm.$data.item = data;
+                }
+                vm.$data.isLoading = false;
+            }
+            nebPay.simulateCall(to, value, callFunction, callArgs, {
+                listener: listener
+            });
+        }
+        $(document).ready(function () {
+            var url = decodeURI(window.location.href);
+            var argsIndex = url.split("?id=");
+            var id = argsIndex[1];
+            vm.$data.isLoading = true;
+            vm2.$data.isLoading = true;
+            getActivity(id);
+            getActivityVouchers(id);
+            if (typeof (webExtensionWallet) === "undefined") {
+                // getFreeAriticel(id);
+            } else {
+
+            }
+        });
+    </script>
+</body>
+
+</html>

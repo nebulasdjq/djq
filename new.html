@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <!-- Meta, title, CSS, favicons, etc. -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="代金券.商家代金券分发平台，用户管理收到的代金券。">
+    <title>
+        代金券.商家代金券分发平台，用户管理收到的代金券
+    </title>
+    <!-- Bootstrap core CSS -->
+    <link href="./indexlink/bootstrap.min.css" rel="stylesheet">
+    <!-- Documentation extras -->
+    <link href="./indexlink/docs.min.css" rel="stylesheet">
+</head>
+
+<body class="bs-docs-home">
+    <a id="skippy" class="sr-only sr-only-focusable" href="https://v3.bootcss.com/#content">
+        <div class="container">
+            <span class="skiplink-text">Skip to main content</span>
+        </div>
+    </a>
+    <!-- Docs master nav -->
+    <header class="navbar navbar-static-top bs-docs-nav" id="top">
+        <div class="container">
+            <div class="navbar-header">
+                <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#bs-navbar" aria-controls="bs-navbar"
+                    aria-expanded="false">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+            </div>
+            <nav id="bs-navbar" class="collapse navbar-collapse">
+                <ul class="nav navbar-nav">
+                    <li>
+                        <a href="./index.html" class="navbar-brand">首页</a>
+                    </li>
+                    <li>
+                        <a href="./merchant.html" class="navbar-brand" title="创建代金券，购买正在发售的代金券">商户中心</a>
+                    </li>
+                    <li>
+                        <a href="./vouchers.html" class="navbar-brand" title="分发给我的代金券">我的代金券</a>
+                    </li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="active ">
+                        <a href="./new.html" class="navbar-brand"><span class="text-danger">发行代金券</span></a>
+                    </li>
+                    <li>
+                        <a href="./help.html" class="navbar-brand">使用帮助</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <hr />
+    <div class="container" id=inputForm>
+        <form action="" onSubmit="return(save())" target="nm_iframe">
+            <div class="form-group">
+                <label for="title">商户名称</label>
+                <input type="text" class="form-control" id="title" placeholder="商户名称">
+            </div>
+            <div class="form-group">
+                <label for="content">广告语</label>
+                <input type="text" class="form-control" id="content" placeholder="宣传标语">
+            </div>
+            <div class="form-group">
+                <label for="summary">发行量(RMB)：预计发行的代金券总价值</label>
+                <input type="number" class="form-control" id="summary" placeholder="100000">
+            </div>
+            <div class="form-group">
+                <label for="balance">抵押NAS(可以为0): 如果代金券无法实现权益，平台将使用您抵押的NAS对用户进行赔付</label>
+                <input type="number" value="0" class="form-control" id="balance" placeholder="抵押NAS数量">
+            </div>
+            <div class="checkbox" style="margin: 0px 0px 52px 0px">
+                <label class="container col-sm-6">
+                    <input type="checkbox" id="sell" v-model="ischecked">公开销售：如果公开销售，需要指定单价
+                </label>
+                <label class="container col-sm-6" id="">
+                    <input type="checkbox" id="free" checked="checked">对用户钱包地址进行免费派送
+                </label>
+            </div>
+            <div class="form-group" id="inputPrice" v-if="ischecked">
+                <label for="price">单价(对NAS)，假设单价设置为 0.01 NAS，用户购买100面额，需要支付100*0.1=1NAS</label>
+                <input type="text" class="form-control" id="price" placeholder="0.01">
+            </div>
+            <div class="form-group">
+                <label for="toDate">有效期限</label>
+                <input type="date" class="form-control" id="toDate">
+            </div>
+            <button type="submit" class="btn btn-default btn-success">提交</button>
+        </form>
+        <iframe id="id_iframe" name="nm_iframe" style="display:none;"></iframe>
+    </div>
+    <footer class="bs-docs-footer">
+            <div class="container">
+                <p>Copyright © 2018 星云代金券，联系我们<a href="mailto:indiestudio@outlook.com" target="_blank">indiestudio@outlook.com</a> </p>
+            </div>
+        </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdn.bootcss.com/bootstrap/4.1.1/js/bootstrap.bundle.min.js"></script>
+    <script src=lib/nebulas.js></script>
+    <script src=lib/nebPay.js></script>
+    <script src="https://cdn.bootcss.com/babel-polyfill/7.0.0-beta.49/polyfill.min.js"></script>
+    <script>
+        "use strict";
+        var dappAddress = "n1uc6Aas79FMdtYTaCVWHVrxmqNDh7Hc5Le";
+        var NebPay = require("nebpay");
+        var nebPay = new NebPay();
+        var nebulas = require("nebulas"),
+            Account = nebulas.Account,
+            Utils = nebulas.Utils,
+            neb = new nebulas.Neb();
+        var serialNumber;
+        var intervalQuery;
+        var queryTimes = 0;
+        var callbackUrl = NebPay.config.mainnetUrl;
+        var nebulas = require("nebulas"),
+            Account = nebulas.Account;
+        neb.setRequest(new nebulas.HttpRequest("https://mainnet.nebulas.io"));
+        new Vue({
+            el: '#inputForm',
+            data: {
+                ischecked: true
+            }
+        })
+
+        function number2Nas(amount) {
+            var d = amount.replace("\"", "").replace("\"", "");
+            return nebulas.Unit.fromBasic(d, "nas");
+        }
+        var sub = function (str, n) {
+            var r = /[^\x00-\xff]/g;
+            if (str.replace(r, "mm").length <= n) {
+                return str;
+            }
+            var m = Math.floor(n / 2);
+            for (var i = m; i < str.length; i++) {
+                if (str.substr(0, i).replace(r, "mm").length >= n) {
+                    return str.substr(0, i);
+                }
+            }
+            return str;
+        }
+
+        function strlen(str) {
+            var len = 0;
+            for (var i = 0; i < str.length; i++) {
+                var c = str.charCodeAt(i);
+                //单字节加1   
+                if ((c >= 0x0001 && c <= 0x007e) || (0xff60 <= c && c <= 0xff9f)) {
+                    len++;
+                } else {
+                    len += 2;
+                }
+            }
+            return len;
+        }
+
+        function save() {
+            var title = jQuery.trim($("#title").val());
+            var content = jQuery.trim($("#content").val());
+            var price = jQuery.trim($("#price").val());
+            var toDate = jQuery.trim($("#toDate").val());
+            var balance = jQuery.trim($("#balance").val());
+            var summary = jQuery.trim($("#summary").val());
+
+            console.log("save title", title.length);
+            console.log("save content", content.length);
+            if (strlen(title) > 30) {
+                title = sub(title, 30);
+            }
+            if (strlen(content) > 40) {
+                content = sub(content, 40)
+            }
+
+            if (title.length < 1 || content.length < 1 || price.length < 1 || toDate.length < 1 ||
+                summary.length < 1) {
+                alert("所有项目都必须填写");
+                return;
+            }
+            var to = dappAddress;
+            var value = balance;
+            var callFunction = "publishActivity"
+            var callArgs = "[\"" + title + "\",\"" + content + "\",\"" + toDate + "\"," + summary +
+                "," + price + "]"
+            console.log("save callArgs", callArgs);
+            var options = {
+                goods: {
+                    name: "example"
+                },
+                callback: callbackUrl //NebPay.config.mainnetUrl 
+            }
+            var listener = function (resp) {
+                console.log("sendMsgIntervalQuery resp.txhash:::" + JSON.stringify(resp));
+                try {
+                    var result = resp.toLowerCase();
+                    if (result.indexOf("error") > -1) {
+                        alert("出现错误：" + result);
+                    }
+                    console.log("onSaveNote try result:::" + result);
+                } catch {
+                    if (resp.txhash) {
+                        queryTimes = 0;
+                        console.log("onSaveNote resp.txhash:::" + resp.txhash);
+                        window.alert("已提交，正在写入区块链中。请稍等。");
+                        intervalQuery = setInterval(function () {
+                            saveNoteIntervalQuery();
+                            console.log("onSaveNote resp.txhash:::" + resp.txhash);
+                        }, 5000);
+                    }
+                }
+            }
+            serialNumber = nebPay.call(to, value, callFunction, callArgs, {
+                listener: listener
+            });
+        }
+
+        function saveNoteIntervalQuery() {
+            nebPay.queryPayInfo(serialNumber)
+                .then(function (resp) {
+                    var respObject = JSON.parse(resp)
+                    console.log("saveNoteIntervalQuery resp:::" + resp);
+                    if (respObject.code === 0) {
+                        console.log("saveNoteIntervalQuery respObject.code === 0:::" + queryTimes);
+                        setTimeout("vm.$data.isBusy = false; getAllArticles();", 20000);
+                        clearInterval(intervalQuery)
+                        queryTimes = 0;
+                        window.alert("现在可以关闭此页面，返回刷新查看。");
+                    } else if (queryTimes++ >= 5) {
+                        queryTimes = 0;
+                        window.alert('写入区块链发送失败，稍后再试');
+                        clearInterval(intervalQuery)
+                        console.log("saveNoteIntervalQuery queryTimes++ >= 5:::" + queryTimes);
+                    }
+                })
+                .catch(function (err) {
+                    console.log("saveNoteIntervalQuery err:::" + err);
+                    queryTimes = 0;
+                    window.alert('写入区块链发送失败，稍后再试');
+                });
+        }
+        $(document).ready(function () {
+            $('#toDate').val("2018-12-31");  
+        });
+    </script>
+</body>
+</html>
