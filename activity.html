@@ -242,7 +242,7 @@
                 window.alert("没有这么多代金券可以出售，请减少购买量。");
                 return;
             }
-            var value = accMul(vm.item.price, amount).toFixed(10);
+            var value = accMul(vm.item.price, amount).toFixed(15);
 
 
             var callFunction = "buy"
