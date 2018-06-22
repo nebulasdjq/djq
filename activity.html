@@ -142,7 +142,7 @@
     <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
 
     <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    <!--script src=lib/nebulas.js></script-->
+    <script src=lib/nebulas.js></script>
     <script src=lib/nebPay.js></script>
     <script src="https://cdn.bootcss.com/babel-polyfill/7.0.0-beta.49/polyfill.min.js"></script>
 
@@ -151,10 +151,10 @@
         var dappAddress = "n1uc6Aas79FMdtYTaCVWHVrxmqNDh7Hc5Le";
         var NebPay = require("nebpay");
         var nebPay = new NebPay();
-        //var nebulas = require("nebulas"),
-        //    Account = nebulas.Account,
-        //    Utils = nebulas.Utils,
-        //    neb = new nebulas.Neb();
+        var nebulas = require("nebulas"),
+            Account = nebulas.Account,
+            Utils = nebulas.Utils,
+            neb = new nebulas.Neb();
         var serialNumber;
         var intervalQuery;
         var queryTimes = 0;
