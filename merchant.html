@@ -63,7 +63,7 @@
         <div class="col-sm-6 text-center" style="height: 500px; vertical-align: middle" v-if="isLoading">
             <img src="./img//loading.gif" style="margin-top: 100px">
         </div>
-        <div v-for="item of items" v-if="haveItems">
+        <div v-for="item of items" v-if="haveItems && !isLoading">
             <div class="col-sm-6">
                 <div style="height: 12px;"></div>
                 <div class="panel panel-danger" style="background-image: url(./img/bgsmall.jpg);color: #fff">
