@@ -163,7 +163,202 @@
                 <p>Copyright © 2018 星云代金券，联系我们<a href="mailto:indiestudio@outlook.com" target="_blank">indiestudio@outlook.com</a> </p>
             </div>
         </footer>
-</body>
-<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        <script src="https://cdn.bootcss.com/vue/2.5.17-beta.0/vue.min.js"></script>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+
+    <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src=lib/nebulas.js></script>
+    <script src=lib/nebPay.js></script>
     <script src="https://cdn.bootcss.com/babel-polyfill/7.0.0-beta.49/polyfill.min.js"></script>
+
+    <script>
+        "use strict";
+        var dappAddress = "n1uc6Aas79FMdtYTaCVWHVrxmqNDh7Hc5Le";
+        var NebPay = require("nebpay");
+        var nebPay = new NebPay();
+        var nebulas = require("nebulas"),
+            Account = nebulas.Account,
+            Utils = nebulas.Utils,
+            neb = new nebulas.Neb();
+        var serialNumber;
+        var intervalQuery;
+        var queryTimes = 0;
+        var callbackUrl = NebPay.config.mainnetUrl;
+        neb.setRequest(new nebulas.HttpRequest("https://mainnet.nebulas.io"));
+
+        var vm = new Vue({
+            el: "#activityDiv",
+            data: {
+                wallet: typeof (webExtensionWallet) === "undefined",
+                item: {},
+                isBusy: false,
+                isLoading: true,
+                selectedItem: {},
+                balance: nebulas.Unit.fromBasic(0, "wei")
+            }
+        });
+        var vm2 = new Vue({
+            el: "#buyersSection",
+            data: {
+                buyers: [{}],
+                isLoading: true,
+            }
+        });
+
+        function number2Nas(amount) {
+            var d = amount.replace("\"", "").replace("\"", "");
+            return nebulas.Unit.fromBasic(d, "wei");
+        }
+
+        function getActivityVouchers(id) {
+            var to = dappAddress;
+            var value = 0;
+            var callFunction = "getActivityVouchers"
+            var callArgs = "[\"" + id + "\"]";
+            var options = {
+                goods: {
+                    name: "example"
+                },
+                callback: callbackUrl
+            }
+
+            var listener = function (resp) {
+
+                var res = resp.result;
+                var data = jQuery.parseJSON(resp.result)
+                if (data) {
+                    vm2.$data.buyers = data.list.reverse();
+
+                }
+                vm2.$data.isLoading = false;
+            }
+            nebPay.simulateCall(to, value, callFunction, callArgs, {
+                listener: listener
+            });
+        }
+
+        function activity(id) {
+            var url = 'activity.html?id=' + id;
+            url = encodeURI(url);
+            window.open(url);
+        }
+
+        function accMul(arg1, arg2) {
+            var m = 0,
+                s1 = arg1.toString(),
+                s2 = arg2.toString();
+            try {
+                m += s1.split(".")[1].length
+            } catch (e) {}
+            try {
+                m += s2.split(".")[1].length
+            } catch (e) {}
+            return Number(s1.replace(".", "")) * Number(s2.replace(".", "")) / Math.pow(10, m)
+        }
+
+        function buy() {
+            var to = dappAddress;
+            var amount = parseInt(jQuery.trim($("#amount").val()));
+            if (amount < 1 || !amount) {
+                window.alert("请输入购买数量（必须为整数）。");
+                return;
+            }
+            if (amount > vm.item.balance || !amount) {
+                window.alert("没有这么多代金券可以出售，请减少购买量。");
+                return;
+            }
+            var value = accMul(vm.item.price, amount);
+
+
+            var callFunction = "buy"
+            var callArgs = "[\"" + vm.item.id + "\"," + amount + "]"
+
+            var options = {
+                goods: {
+                    name: "example"
+                },
+                callback: callbackUrl //NebPay.config.mainnetUrl 
+            }
+
+            var listener = function (resp) {
+                try {
+                    vm.$data.isBusy = false;
+                    var result = resp.toLowerCase();
+                    if (result.indexOf("error") > -1) {
+                        window.alert("交易已取消");
+                    }
+                } catch (err) {
+                    if (resp.txhash) {
+                        queryTimes = 0;
+                        vm.$data.isBusy = true;
+                        window.alert("已提交。过一会儿刷新查看, 或者到\"我的代金券\"查看。");
+                        intervalQuery = setInterval(function () {
+                            buyIntervalQuery();
+                        }, 5000);
+                    }
+                }
+            }
+            serialNumber = nebPay.call(to, value, callFunction, callArgs, {
+                listener: listener
+            });
+        }
+
+        function buyIntervalQuery() {
+            nebPay.queryPayInfo(serialNumber)
+                .then(function (resp) {
+                    var respObject = JSON.parse(resp)
+
+                    if (respObject.code === 0) {
+
+                        setTimeout("vm.$data.isBusy = false;", 20000);
+                        clearInterval(intervalQuery)
+                        queryTimes = 0;
+                    } else if (queryTimes++ >= 5) {
+                        vm.$data.isBusy = false;
+                        queryTimes = 0;
+                        window.alert('写入区块链发送失败，稍后再试');
+                        clearInterval(intervalQuery)
+
+                    }
+                })
+                .catch(function (err) {
+
+                    queryTimes = 0;
+                    vm.$data.isBusy = false;
+                    window.alert('写入区块链发送失败，稍后再试');
+                });
+        }
+
+        function getActivity(id) {
+            var to = dappAddress;
+            var value = 0;
+            var callFunction = "getActivity"
+            var callArgs = "[\"" + id + "\"]"
+            var options = {
+                goods: {
+                    name: "example"
+                },
+                callback: callbackUrl
+            }
+            console.log(JSON.stringify(id));
+            var listener = function (resp) {
+                console.log("getAriticel:::" + JSON.stringify(resp));
+                var res = resp.result;
+                var data = jQuery.parseJSON(resp.result)
+
+                if (data) {
+                    vm.$data.item = data;
+                }
+                vm.$data.isLoading = false;
+            }
+            nebPay.simulateCall(to, value, callFunction, callArgs, {
+                listener: listener
+            });
+        }
+        $(document).ready(function () 
+
+        });
+    </script>
+</body>
+
 </html>
